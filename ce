@@ -1,0 +1,67 @@
+import pandas as pd
+
+
+def read_csv(file_path):
+    try:
+        data = pd.read_csv(file_path)
+        return data
+    except Exception as e:
+        print(f"Error reading CSV: {e}")
+
+
+def calculate_rank(points_scored, points_allowed, win_loss):
+    # Pythagorean Expectation
+    pythag_expectation = (points_scored**7.01) / (
+        (points_scored**7.01) + (points_allowed**7.01)
+    )
+
+    # Rank calculation based on the given formula
+    rank = (-abs(win_loss) ** (1 / 19)) * (1 - pythag_expectation)
+
+    return rank
+
+
+df = read_csv("x.csv")
+# pythag win rates and scores, []
+# this is transient
+scores = {}
+
+for i in df.index:
+    # score, pythag, points_scored, opp_point_scored
+    scores[df.at[i, "team"]] = [0.5, 0, 0, 0]
+
+for i in df.index:
+    own_score = df.at[i, "team_score"]
+    x_diff = own_score - df.at[i, "opponent_team_score"]
+    scored = own_score
+
+    win = True if x_diff > 0 else False if x_diff < 0 else 0
+    opponent = df.at[i + 1, "team"] if i % 2 == 0 else df.at[i - 1, "team"]
+    opponent_pythag_win_rate = scores[opponent][1]
+
+    scores[df.at[i, "team"]][2] += own_score
+    scores[df.at[i, "team"]][3] += df.at[i, "opponent_team_score"]
+
+    own_max_score = scores[df.at[i, "team"]][2]
+    opp_max_score = scores[df.at[i, "team"]][3]
+
+    # set own pythag win rate
+    pythag_expectation = (own_max_score**7.01) / (
+        (own_max_score**7.01) + (opp_max_score**7.01)
+    )
+
+    if win:
+        scores[df.at[i, "team"]][0] += (-abs(x_diff) ** (1 / 19)) * (
+            1 - pythag_expectation
+        )
+    else:
+        scores[df.at[i, "team"]][0] += (-abs(x_diff) ** (1 / 19)) * (
+            1 - (pythag_expectation**2)
+        )
+
+    df.at[i, "score"] = scores[df.at[i, "team"]][0]
+
+# sort df by score
+df = df.sort_values(by="score", ascending=False)
+
+print(df)
