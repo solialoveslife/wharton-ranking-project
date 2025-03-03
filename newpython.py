@@ -20,18 +20,29 @@ if df is None:
 
 # Initialize a dictionary to track aggregated team statistics
 team_stats = {}
+# Identify non-D1 games by checking if either team in a game is non-D1
+non_d1_games = df[df["notD1_incomplete"] == True]["game_id"].unique()
 
 # Process each game in the DataFrame
 for index, row in df.iterrows():
-    # Skip non-D1 games if applicable (assumes column "opponent_d1" exists)
-    if "opponent_d1" in df.columns and not row["opponent_d1"]:
+    # Skip games where either team is non-D1
+    if row["game_id"] in non_d1_games:
         continue
 
     team = row["team"]
-    opponent = row["opponent_team"]  # Assuming opponent team name is provided
     team_score = row["team_score"]
-    opp_score = row["opponent_team_score"]
+
+    # Find the opponent team and their score within the same game_id
+    opponent_row = df[(df["game_id"] == row["game_id"]) & (df["team"] != team)]
+    if opponent_row.empty:
+        continue  # Skip if opponent data is missing
+
+    opponent = opponent_row.iloc[0]["team"]
+    opp_score = opponent_row.iloc[0]["team_score"]
+
     score_diff = team_score - opp_score
+
+    # (Continue processing the game as needed)
 
     # Initialize team data if first appearance
     for t in [team, opponent]:
