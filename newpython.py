@@ -28,30 +28,27 @@ for index, row in df.iterrows():
         continue
 
     team = row["team"]
+    opponent = row["opponent_team"]  # Assuming opponent team name is provided
     team_score = row["team_score"]
     opp_score = row["opponent_team_score"]
-
     score_diff = team_score - opp_score
 
     # Initialize team data if first appearance
-    if team not in team_stats:
-        team_stats[team] = {
-            "points_scored": 0,
-            "points_allowed": 0,
-            "total_score": 0
-        }
-
-    # Calculate pythagorean win rate based on previous games only
-    pythag_win_rate = calculate_pythagorean_win_rate(
-        team_stats[team]["points_scored"],
-        team_stats[team]["points_allowed"]
+    for t in [team, opponent]:
+        if t not in team_stats:
+            team_stats[t] = {"points_scored": 0, "points_allowed": 0, "total_score": 0}
+    
+    # Get the Pythagorean win rate of the opponent (or default if first game)
+    opp_pythag_win_rate = calculate_pythagorean_win_rate(
+        team_stats[opponent]["points_scored"],
+        team_stats[opponent]["points_allowed"]
     )
 
-    # Calculate game score based on the formula
+    # Calculate game score based on the opponent's Pythagorean win rate
     if score_diff > 0:  # Win
-        game_score = (abs(score_diff) ** (1/19)) * (1 - pythag_win_rate)
+        game_score = (abs(score_diff) ** (1/19)) * (1 - opp_pythag_win_rate)
     elif score_diff < 0:  # Loss
-        game_score = -(abs(score_diff) ** (1/19)) * ((1 - pythag_win_rate) ** 2)
+        game_score = -(abs(score_diff) ** (1/19)) * ((1 - opp_pythag_win_rate) ** 2)
     else:  # Tie
         game_score = 0
 
@@ -59,6 +56,10 @@ for index, row in df.iterrows():
     team_stats[team]["points_scored"] += team_score
     team_stats[team]["points_allowed"] += opp_score
     team_stats[team]["total_score"] += game_score
+    
+    # Also update the opponent's stats
+    team_stats[opponent]["points_scored"] += opp_score
+    team_stats[opponent]["points_allowed"] += team_score
 
 # Build a final aggregated DataFrame with one row per team
 aggregated_data = []
@@ -91,3 +92,4 @@ for _, row in team_df.iterrows():
     print(f"  Points Scored: {row['Points Scored']}")
     print(f"  Points Allowed: {row['Points Allowed']}")
     print(f"  Final Pythagorean Win Rate: {row['Final Pythagorean Win Rate']:.4f}\n")
+
