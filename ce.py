@@ -15,7 +15,7 @@ def calculate_pythagorean_win_rate(points_scored, points_allowed):
     return (points_scored**7.01) / ((points_scored**7.01) + (points_allowed**7.01))
 
 # Read the CSV file
-df = read_csv("x.csv")
+df = read_csv("games_2022 - games_2022.csv")
 if df is None:
     exit()
 
@@ -27,7 +27,12 @@ for i in df.index:
     team = df.at[i, "team"]
     team_score = df.at[i, "team_score"]
     opp_score = df.at[i, "opponent_team_score"]
-    score_diff = team_score - opp_score
+
+    # Check if the opponent is a D1 team (assuming there's a column "opponent_d1" with True/False)
+    if "opponent_d1" in df.columns and not df.at[i, "opponent_d1"]:
+        continue  # Skip non-D1 games entirely
+
+score_diff = team_score - opp_score
     
     # Initialize team data if first appearance
     if team not in team_stats:
